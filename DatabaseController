@@ -12,32 +12,27 @@ using System.Security.Cryptography.X509Certificates;
 public class DatabaseController : MonoBehaviour
 {
     private string dbName = "URI=file:SensorData.db";   // The database is therefore always within the same folder as the project, and is called SensorData.db.
-    
-    // Define variables for status indicators, floating text, and global storage.
-    public TextMeshProUGUI canvasText1;                 
-    public TextMeshProUGUI canvasText2;                 
-    public TextMeshProUGUI canvasText3;                 
-    public GameObject TempStatusDC;                     
-    public GameObject HumiStatusDC;                     
-    public TextMeshPro TempValueText;                   
-    public TextMeshPro HumiValueText;                   
-    string longstring;                                  
-    string timestamp;                                   
-    string device;                                      
-    float temp;                                         
-    float humi;                                         
-    public GameObject TempStatusMakerspace;             
-    public GameObject HumiStatusMakerspace;             
-    public TextMeshPro TempValueTextMakerspace;         
-    public TextMeshPro HumiValueTextMakerspace;         
-    string timestamp2;                                  
-    string device2;                                     
-    float temp2;                                        
-    float humi2;                                        
-    string longstring2;                                 
-    public float speed = 1f;
 
-    // Following four public variables are for the dropdown and inputfield values of the control signal pop-up.
+    // Define the status indicator variables (references to in-game GameObjects)
+    public TextMeshProUGUI canvasText1;
+    public TextMeshProUGUI canvasText2;
+    public TextMeshProUGUI canvasText3;
+    public GameObject TempStatusDC;
+    public GameObject HumiStatusDC;
+    public TextMeshPro TempValueText;
+    public TextMeshPro HumiValueText;
+    public GameObject TempStatusMakerspace;
+    public GameObject HumiStatusMakerspace;
+    public TextMeshPro TempValueTextMakerspace;
+    public TextMeshPro HumiValueTextMakerspace;
+    string longstring;
+    string timestamp;
+    string device;
+    float temp;
+    float humi;
+    float light;
+
+    // Define the public variables are for the dropdown and inputfield values of the control signal pop-up.
     public TMP_Dropdown Function;
     public TMP_Dropdown Variable;
     public TMP_InputField Value;
@@ -103,6 +98,7 @@ public class DatabaseController : MonoBehaviour
                 // Set location (target device)
                 string locationString = Location.options[l_index].text;
                 command.CommandText = "UPDATE control SET DEVICE = '" + locationString + "' WHERE ID='1';";
+                //UnityEngine.Debug.Log(command.CommandText);
                 command.ExecuteNonQuery();
 
                 // Set signal
@@ -115,14 +111,12 @@ public class DatabaseController : MonoBehaviour
             connection.Close();
         }
     }
-
     // Clear control signal in database.
     public void ClearControl()
     {
         using (var connection = new SqliteConnection(dbName))
         {
             connection.Open();
-
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = "UPDATE control SET DEVICE = 'All', SIGNAL = 'X' WHERE ID = '1';";
@@ -143,16 +137,15 @@ public class DatabaseController : MonoBehaviour
                 using (IDataReader reader = command.ExecuteReader())
                 {
                     while (reader.Read())
-
                     longstring = reader.GetString(0) + "#" + reader.GetString(1) + "#" + reader.GetFloat(2) + "#" + reader.GetFloat(3);// + "#" + reader.GetFloat(4);
-                    string[] latestValues = longstring.Split('#');                                  // These two lines concatenate all the row values into one string (separated by #) and then we split them into their respective variables below.
+                    string[] latestValues = longstring.Split('#');
 
                     timestamp = latestValues[0];
                     device = latestValues[1];
                     temp = float.Parse(latestValues[2]);
                     humi = float.Parse(latestValues[3]);
 
-                    if (temp < 18)                                                              // Make this into a contextScheme() method later?
+                    if (temp < 18)
                     {
                         TempStatusMakerspace.GetComponent<Renderer>().material.color = Color.blue;
                         TempValueTextMakerspace.text = "Temperature is very cold (" + temp + "°C). Action required.";
@@ -204,29 +197,8 @@ public class DatabaseController : MonoBehaviour
                         HumiValueTextMakerspace.text = "Humidity is very high (" + humi + "%). Action required.";
                     }
                     canvasText1.text = "Device ID: " + device + "\x0ATemperature: " + temp + "°C" + "\x0AHumidity: " + humi + "%" + "\x0ATimestamp: " + timestamp;
-                    canvasText2.text = "Device ID: RPi Sense HAT 2" + "\x0ATemperature: " + temp*0.8 + "°C" + "\x0AHumidity: " + humi*0.95 + "%" + "\x0ATimestamp: " + timestamp;
                     reader.Close();
                 }
-                /*
-                command.CommandText = "SELECT * FROM data_latest WHERE device = 'RPi Sense HAT 2';";
-                using (IDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-
-                    longstring2 = reader.GetString(0) + "#" + reader.GetString(1) + "#" + reader.GetFloat(2) + "#" + reader.GetFloat(3);
-                    string[] latestValues2 = longstring2.Split('#');                                  // These two lines concatenate all the row values into one string (separated by #) and then we split them into their respective variables below.
-
-                    UnityEngine.Debug.Log(longstring2);
-
-                    timestamp2 = latestValues2[0];
-                    device2 = latestValues2[1];
-                    temp2 = float.Parse(latestValues2[2]);
-                    humi2 = float.Parse(latestValues2[3]);
-
-                    contextScheme(temp2, humi2, TempStatusMakerspace, HumiStatusMakerspace, TempValueTextMakerspace, HumiValueTextMakerspace);
-
-                    reader.Close();
-                }*/
             }
             connection.Close();
         }
