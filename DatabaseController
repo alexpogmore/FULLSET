@@ -16,7 +16,6 @@ public class DatabaseController : MonoBehaviour
     // Define the status indicator variables (references to in-game GameObjects)
     public TextMeshProUGUI canvasText1;
     public TextMeshProUGUI canvasText2;
-    public TextMeshProUGUI canvasText3;
     public GameObject TempStatusDC;
     public GameObject HumiStatusDC;
     public TextMeshPro TempValueText;
@@ -133,13 +132,91 @@ public class DatabaseController : MonoBehaviour
             connection.Open();
             using (var command = connection.CreateCommand())
             {
-                command.CommandText = "SELECT * FROM data_latest WHERE device = 'RPi Sense HAT 1'";
+                command.CommandText = "SELECT * FROM data_latest";
                 using (IDataReader reader = command.ExecuteReader())
                 {
                     while (reader.Read())
-                    longstring = reader.GetString(0) + "#" + reader.GetString(1) + "#" + reader.GetFloat(2) + "#" + reader.GetFloat(3);// + "#" + reader.GetFloat(4);
+                    longstring = reader.GetString(0) + "#" + reader.GetString(1) + "#" + reader.GetFloat(2) + "#" + reader.GetFloat(3) + "*";
+                    deviceDataSet = longstring.Split('*');
                     string[] latestValues = longstring.Split('#');
+                    timestamp = latestValues[0];
+                    device = latestValues[1];
+                    temp = float.Parse(latestValues[2]);
+                    humi = float.Parse(latestValues[3]);
 
+                    if (temp < 18)
+                    {
+                        TempStatusMakerspace.GetComponent<Renderer>().material.color = Color.blue;
+                        TempValueTextMakerspace.text = "Temperature is very cold (" + temp + "°C). Action required.";
+                    }
+                    else if (18 <= temp && temp < 20)
+                    {
+                        TempStatusMakerspace.GetComponent<Renderer>().material.color = Color.cyan;
+                        TempValueTextMakerspace.text = "Temperature is cool (" + temp + "°C). Action suggested.";
+                    }
+                    else if (20 <= temp && temp < 22)
+                    {
+                        TempStatusMakerspace.GetComponent<Renderer>().material.color = Color.gray;
+                        TempValueTextMakerspace.text = "Temperature is optimal (" + temp + "°C).";
+                    }
+                    else if (22 <= temp && temp < 24)
+                    {
+                        TempStatusMakerspace.GetComponent<Renderer>().material.color = Color.magenta;
+                        TempValueTextMakerspace.text = "Temperature is warm (" + temp + "°C). Action suggested.";
+                    }
+                    else if (temp >= 24)
+                    {
+                        TempStatusMakerspace.GetComponent<Renderer>().material.color = Color.red;
+                        TempValueTextMakerspace.text = "Temperature is hot (" + temp + "°C). Action required.";
+                    }
+
+                    if (humi < 30)
+                    {
+                        HumiStatusMakerspace.GetComponent<Renderer>().material.color = Color.blue;
+                        HumiValueTextMakerspace.text = "Humidity is very low (" + humi + "%). Action required.";
+                    }
+                    else if (30 <= humi && humi < 40)
+                    {
+                        HumiStatusMakerspace.GetComponent<Renderer>().material.color = Color.cyan;
+                        HumiValueTextMakerspace.text = "Humidity is low (" + humi + "%). Action suggested.";
+                    }
+                    else if (40 <= humi && humi <= 60)
+                    {
+                        HumiStatusMakerspace.GetComponent<Renderer>().material.color = Color.gray;
+                        HumiValueTextMakerspace.text = "Humidity is optimal (" + humi + "%).";
+                    }
+                    else if (61 <= humi && humi <= 70)
+                    {
+                        HumiStatusMakerspace.GetComponent<Renderer>().material.color = Color.magenta;
+                        HumiValueTextMakerspace.text = "Humidity is high (" + humi + "%). Action suggested.";
+                    }
+                    else if (humi > 70)
+                    {
+                        HumiStatusMakerspace.GetComponent<Renderer>().material.color = Color.red;
+                        HumiValueTextMakerspace.text = "Humidity is very high (" + humi + "%). Action required.";
+                    }
+                    canvasText1.text = "Device ID: " + device + "\x0ATemperature: " + temp + "°C" + "\x0AHumidity: " + humi + "%" + "\x0ATimestamp: " + timestamp;
+                    reader.Close();
+                }
+            }
+            connection.Close();
+        }
+    }
+
+    public void DisplayHistoricalData()
+    {
+        using (var connection = new SqliteConnection(dbName))
+        {
+            connection.Open();
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT * FROM data_historical";
+                using (IDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    longstring = reader.GetString(0) + "#" + reader.GetString(1) + "#" + reader.GetFloat(2) + "#" + reader.GetFloat(3) + "*";
+                    deviceDataSet = longstring.Split('*');
+                    string[] latestValues = longstring.Split('#');
                     timestamp = latestValues[0];
                     device = latestValues[1];
                     temp = float.Parse(latestValues[2]);
